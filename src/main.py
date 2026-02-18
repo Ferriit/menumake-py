@@ -40,7 +40,7 @@ def saveconfig(menu, command):
         nonlocal max_index
         for val in m.values():
             if isinstance(val, list):
-                if len(val) >= 3 and isinstance(val[2], int):
+                if len(val) >= 3 and isinstance(val[0], (bool, int)) and isinstance(val[2], int):
                     max_index = max(max_index, val[2])
                 elif len(val) == 1 and isinstance(val[0], dict):
                     find_max_index(val[0])
@@ -52,21 +52,23 @@ def saveconfig(menu, command):
 
     def walk(m):
         for val in m.values():
-            if isinstance(val, list):
-                if len(val) >= 3 and isinstance(val[2], int):
-                    idx = val[2]
-                    if isinstance(val[0], bool) and val[0]:
+            if isinstance(val, list) and len(val) == 1 and isinstance(val[0], dict):
+                walk(val[0])
+                continue
+
+            if isinstance(val, list) and len(val) >= 3:
+                idx = val[2]
+                if isinstance(val[0], bool):
+                    if val[0]:
                         outputs[idx] += val[1] + " "
-                    elif isinstance(val[0], int):
-                        outputs[idx] += val[1].replace("$", str(val[0])) + " "
-                elif len(val) == 1 and isinstance(val[0], dict):
-                    walk(val[0])
+                elif isinstance(val[0], int):
+                    outputs[idx] += val[1].replace("$", str(val[0])) + " "
+
             elif isinstance(val, dict):
                 walk(val)
 
     walk(menu)
 
-    # Replace $MENUMAKE_OPTIONS_# with the corresponding strings
     final_command = command
     for i, out in enumerate(outputs):
         final_command = final_command.replace(f"$MENUMAKE_OPTIONS_{i}", out.strip())
