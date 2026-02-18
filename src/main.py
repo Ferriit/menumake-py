@@ -34,37 +34,45 @@ def resolvepath(menu, path):
 
     return curr
 
-def saveconfig(menu, command, depth=0, spot=0):
-    output = [""]  
+def saveconfig(menu, command):
+    max_index = 0
+    def find_max_index(m):
+        nonlocal max_index
+        for val in m.values():
+            if isinstance(val, list):
+                if len(val) >= 3 and isinstance(val[2], int):
+                    max_index = max(max_index, val[2])
+            elif isinstance(val, dict):
+                find_max_index(val)
+            elif isinstance(val, list) and isinstance(val[0], dict):  # submenu format [{"...": [...]}]
+                find_max_index(val[0])
+    find_max_index(menu)
 
-    for option, value in menu.items():
-        if isinstance(value, list) and (isinstance(value[0], bool) or isinstance(value[0], int)):
-            text = value[1]
-            if isinstance(value[0], int):
-                text = text.replace("$", str(value[0]))
-            if value[0] or isinstance(value[0], int):
-                # Ensure output has enough spots
-                while len(output) <= spot:
-                    output.append("")
-                output[spot] += text + " "
+    outputs = [""] * (max_index + 1)
 
-        elif isinstance(value, list) and any(isinstance(x, dict) for x in value):
-            sub_output = saveconfig(next(x for x in value if isinstance(x, dict)), command, depth + 1, spot + 1)
-            for i, text in enumerate(sub_output):
-                if len(output) <= i + spot:
-                    output.append("")
-                output[i + spot] += text
+    def walk(m):
+        for val in m.values():
+            if isinstance(val, list):
+                if len(val) >= 3 and isinstance(val[2], int):
+                    idx = val[2]
+                    if isinstance(val[0], bool) and val[0]:
+                        outputs[idx] += val[1] + " "
+                    elif isinstance(val[0], int):
+                        outputs[idx] += val[1].replace("$", str(val[0])) + " "
+                elif isinstance(val[0], dict):
+                    walk(val[0])
+            elif isinstance(val, dict):
+                walk(val)
 
-        else:
-            pass
+    walk(menu)
 
-    if depth == 0:
-        cmd = command
-        for i, text in enumerate(output):
-            cmd = cmd.replace(f"$MENUMAKE_OPTIONS_{i}", text.strip())
-        open(".makemenu.sh", "w").write(cmd)
-    else:
-        return output
+    # Replace $MENUMAKE_OPTIONS_# with the corresponding strings
+    final_command = command
+    for i, out in enumerate(outputs):
+        final_command = final_command.replace(f"$MENUMAKE_OPTIONS_{i}", out.strip())
+
+    with open(".makemenu.sh", "w") as f:
+        f.write(final_command)
 
 def main(stdscr):
     curses.start_color()
