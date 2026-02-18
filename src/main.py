@@ -4,17 +4,29 @@ import sys
 import json
 
 def resolvepath(menu, path):
-    if not path:
+    if not path or path == "/":
         return menu
 
     parts = [p for p in path.split("/") if p]
 
     curr = menu
     for part in parts:
-        if part in curr and isinstance(curr[part], list):
-            curr = curr[part][1]
-        elif part in curr and isinstance(curr[part], dict):
-            curr = curr[part]
+        if part in curr:
+            value = curr[part]
+            if isinstance(value, list):
+                found_submenu = None
+                for item in value:
+                    if isinstance(item, dict):
+                        found_submenu = item
+                        break
+                if found_submenu is not None:
+                    curr = found_submenu
+                else:
+                    curr = value
+            elif isinstance(value, dict):
+                curr = value
+            else:
+                return None
         else:
             return None
 
@@ -31,10 +43,9 @@ def saveconfig(menu, command, depth=0):
         elif type(value[0]) == int:
             output += value[1].replace("$", str(value[0])) + " "
 
-        elif type(value[1]) == dict:
-            # Assume submenu. First element is name, second is dict of options
-            output += f"# {value[0]} "
-            output += saveconfig(value[1], command, depth + 1)
+        elif type(value[0]) == dict:
+            # Assume submenu. First element is dict of options
+            output += saveconfig(value[0], command, depth + 1)
     
     if depth != 0:
         return output
@@ -59,7 +70,6 @@ def main(stdscr):
     #         "Toggle 2": [False, "-DToggle2"], 
     #         "Toggle 3": [False, "-DToggle3"],
     #         "Submenu": [
-    #             "Submenuname", 
     #             {
     #                 "Subtoggle 1": [False, "-DSubtoggle1"], 
     #                 "Subtoggle 2": [False, "-DSubtoggle2"], 
@@ -102,13 +112,13 @@ def main(stdscr):
 
         for i, (option, value) in enumerate(currmenu.items()):
             if type(value[0]) == bool:
-                marker = '*' if value[0] else ' '
+                marker = '[*]' if value[0] else '[ ]'
 
             elif type(value[0]) == int:
-                marker = f"{value[0]}"
-            elif type(value[1]) == dict:
-                # Assume submenu. First element is name, second is dict of options
-                marker = f"> {value[0]}"
+                marker = f"[{value[0]}]"
+            elif type(value[0]) == dict:
+                # Assume submenu. First element is options dict
+                marker = f"->"
 
             else:
                 marker = str(value[0])
@@ -117,9 +127,9 @@ def main(stdscr):
 
             if i == selectedthing:
                 cursX, cursY = 10, 5 + i + 1
-                stdscr.addstr(5 + i + 1, 10, f" {option} [{marker}]", curses.color_pair(3))
+                stdscr.addstr(5 + i + 1, 10, f" {option} {marker}", curses.color_pair(3))
             else:
-                stdscr.addstr(5 + i + 1, 10, f" {option} [{marker}]", curses.color_pair(2))
+                stdscr.addstr(5 + i + 1, 10, f" {option} {marker}", curses.color_pair(2))
 
         stdscr.move(cursY, cursX)
 
@@ -142,7 +152,7 @@ def main(stdscr):
             currmenu[list(currmenu)[selectedthing]][0] = not currmenu[list(currmenu)[selectedthing]][0]
 
         # Handle submenus
-        elif (ch == curses.KEY_ENTER or ch == 10 or ch == 13) and type(currmenu[list(currmenu)[selectedthing]][1]) == dict:
+        elif (ch == curses.KEY_ENTER or ch == 10 or ch == 13) and type(currmenu[list(currmenu)[selectedthing]][0]) == dict:
             path += list(currmenu)[selectedthing] + "/"
             currmenu = resolvepath(menu, path)
             selectedthing = 0

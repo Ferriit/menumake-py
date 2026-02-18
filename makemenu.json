@@ -1,0 +1,12 @@
+{
+    "command": "echo",
+    "menu": {
+        "Option 1": [false, "This is option 1."],
+        "Option 2": [true, "This is option 2."],
+        "Submenu": [{
+            "Suboption 1": [false, "This is suboption 1."],
+            "Suboption 2": [true, "This is suboption 2."]
+        }],
+        "Option 3": [0, "Option 3 is $."]
+    }
+}
