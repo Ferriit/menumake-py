@@ -81,6 +81,7 @@ def main(stdscr):
     curses.use_default_colors()
     curses.noecho()
     curses.cbreak()
+    curses.curs_set(0)
     stdscr.keypad(True)
 
     stdscr.nodelay(True)
@@ -124,10 +125,11 @@ def main(stdscr):
 
     def clear():
         for y in range(5, rows - 5):
-            stdscr.addstr(y, 9, "║" + " " * (col - 20) + "║", curses.color_pair(2))
+            stdscr.addstr(y, 9, "║" + " " * (col - 20) + "║", curses.color_pair(1))
+            stdscr.addstr(y, 10, " " * (col - 20), curses.color_pair(2))
 
-        stdscr.addstr(4, 9, "╔" + "═" * (col - 20) + "╗", curses.color_pair(2))
-        stdscr.addstr(y + 1, 9, "╚" + "═" * (col - 20) + "╝", curses.color_pair(2))
+        stdscr.addstr(4, 9, "╔" + "═" * (col - 20) + "╗", curses.color_pair(1))
+        stdscr.addstr(y + 1, 9, "╚" + "═" * (col - 20) + "╝", curses.color_pair(1))
 
     def drawcurrmenu():
         msg = "Menu"
@@ -155,9 +157,9 @@ def main(stdscr):
 
             if i == selectedthing:
                 cursX, cursY = 10, 5 + i + 1
-                stdscr.addstr(5 + i + 1, 10, f" {option} {marker}", curses.color_pair(3))
+                stdscr.addstr(5 + i + 1, 10, f"*{option} {marker}", curses.color_pair(3))
             else:
-                stdscr.addstr(5 + i + 1, 10, f" {option} {marker}", curses.color_pair(2))
+                stdscr.addstr(5 + i + 1, 10, f"-{option} {marker}", curses.color_pair(2))
 
         stdscr.move(cursY, cursX)
 
@@ -209,10 +211,17 @@ def main(stdscr):
 
 if __name__ == "__main__":
     openmenu = True
+    build = False
     if len(sys.argv) > 1:
-        if sys.argv[1] == "build":
+        if "build" in sys.argv:
             openmenu = False
-            os.system("sh .makemenu.sh")
+            build = True
+        
+        if "run" in sys.argv:
+            openmenu = True
 
     if openmenu:
         curses.wrapper(main)
+
+    if build:
+        os.system("sh .makemenu.sh")
