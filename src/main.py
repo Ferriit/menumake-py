@@ -124,7 +124,10 @@ def main(stdscr):
 
     def clear():
         for y in range(5, rows - 5):
-            stdscr.addstr(y, 10, " " * (col - 20), curses.color_pair(2))
+            stdscr.addstr(y, 9, "║" + " " * (col - 20) + "║", curses.color_pair(2))
+
+        stdscr.addstr(4, 9, "╔" + "═" * (col - 20) + "╗", curses.color_pair(2))
+        stdscr.addstr(y + 1, 9, "╚" + "═" * (col - 20) + "╝", curses.color_pair(2))
 
     def drawcurrmenu():
         msg = "Menu"
