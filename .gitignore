@@ -210,3 +210,4 @@ __marimo__/
 # other
 hex_to_ansi.py
 .makemenu.sh
+src/menumake

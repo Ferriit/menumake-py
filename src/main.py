@@ -42,10 +42,10 @@ def saveconfig(menu, command):
             if isinstance(val, list):
                 if len(val) >= 3 and isinstance(val[2], int):
                     max_index = max(max_index, val[2])
+                elif len(val) == 1 and isinstance(val[0], dict):
+                    find_max_index(val[0])
             elif isinstance(val, dict):
                 find_max_index(val)
-            elif isinstance(val, list) and isinstance(val[0], dict):  # submenu format [{"...": [...]}]
-                find_max_index(val[0])
     find_max_index(menu)
 
     outputs = [""] * (max_index + 1)
@@ -59,7 +59,7 @@ def saveconfig(menu, command):
                         outputs[idx] += val[1] + " "
                     elif isinstance(val[0], int):
                         outputs[idx] += val[1].replace("$", str(val[0])) + " "
-                elif isinstance(val[0], dict):
+                elif len(val) == 1 and isinstance(val[0], dict):
                     walk(val[0])
             elif isinstance(val, dict):
                 walk(val)
