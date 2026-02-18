@@ -82,7 +82,7 @@ def main(stdscr):
     #     } // $ = placeholder for number value
     # }
 
-    menudata = json.loads(open("makemenu.json").read())
+    menudata = json.loads(open("menumake.json").read())
     menu = menudata["menu"]
     command = menudata["command"]
 
