@@ -1,5 +1,5 @@
 {
-    "command": "echo",
+    "command": "echo $MENUMAKE_OPTIONS",
     "menu": {
         "Option 1": [false, "This is option 1."],
         "Option 2": [true, "This is option 2."],

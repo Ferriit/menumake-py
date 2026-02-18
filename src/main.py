@@ -51,7 +51,7 @@ def saveconfig(menu, command, depth=0):
     
     if depth != 0:
         return output
-    open(".makemenu.sh", "w").write(command + " " + output)
+    open(".makemenu.sh", "w").write(command.replace("$MENUMAKE_OPTIONS", output))
 
 def main(stdscr):
     curses.start_color()
