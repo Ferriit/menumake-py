@@ -4,8 +4,9 @@ A simple build program that supports menus
 ## !DISCLAIMER!
 ### Do NOT use this for actual projects that require value checking for integers or projects that require multi-line compilation as this DOES NOT support such compilation and is incredibly unstable without value checking!
 
- * To run the configuration, run `makemenu`
- * To run the generated shell script, run `makemenu build`
+ * To run the configuration, run `makemenu`.
+ * To run the generated shell script, run `makemenu build`. This skips the menu.
+ * Tp run the configuration and also run the generated shell script, run `makemenu run build`.
 
 
 ### Syntax:
