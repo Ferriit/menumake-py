@@ -2,8 +2,8 @@
 
 # Install script for menumake-py.
 
-mv src/main.py src/menumake
-chmod +x src/menumake
-mv src/menumake /usr/local/bin/menumake
+cp src/main.py src/menumake
+sudo chmod +x src/menumake
+sudo cp src/menumake /usr/local/bin/menumake
 
-echo "menumake-py installed successfully"
+echo "menumake-py installed successfully. You can run it using the command 'menumake'."
