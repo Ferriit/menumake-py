@@ -20,4 +20,4 @@ A simple build program that supports menus
  * `"Name", [0, "COMPILATIONFLAG=$]`. The $ gets substituted with the value set in the menu.
 
 #### Submenu Syntax:
- * `"Name": {}`. This shows up as "Name" in the menu and allows the user to change everything inside the submenu. The syntax inside the curly braces for a submenu is the same as that of the main menu
+ * `"Name": [{}]`. This shows up as "Name" in the menu and allows the user to change everything inside the submenu. The syntax inside the curly braces for a submenu is the same as that of the main menu
