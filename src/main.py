@@ -34,24 +34,37 @@ def resolvepath(menu, path):
 
     return curr
 
-def saveconfig(menu, command, depth=0):
-    output = ""
+def saveconfig(menu, command, depth=0, spot=0):
+    output = [""]  
 
-    for i, (option, value) in enumerate(menu.items()):
-        if type(value[0]) == bool:
-            if value[0]:
-                output += f"{value[1]} "
+    for option, value in menu.items():
+        if isinstance(value, list) and (isinstance(value[0], bool) or isinstance(value[0], int)):
+            text = value[1]
+            if isinstance(value[0], int):
+                text = text.replace("$", str(value[0]))
+            if value[0] or isinstance(value[0], int):
+                # Ensure output has enough spots
+                while len(output) <= spot:
+                    output.append("")
+                output[spot] += text + " "
 
-        elif type(value[0]) == int:
-            output += value[1].replace("$", str(value[0])) + " "
+        elif isinstance(value, list) and any(isinstance(x, dict) for x in value):
+            sub_output = saveconfig(next(x for x in value if isinstance(x, dict)), command, depth + 1, spot + 1)
+            for i, text in enumerate(sub_output):
+                if len(output) <= i + spot:
+                    output.append("")
+                output[i + spot] += text
 
-        elif type(value[0]) == dict:
-            # Assume submenu. First element is dict of options
-            output += saveconfig(value[0], command, depth + 1)
-    
-    if depth != 0:
+        else:
+            pass
+
+    if depth == 0:
+        cmd = command
+        for i, text in enumerate(output):
+            cmd = cmd.replace(f"$MENUMAKE_OPTIONS_{i}", text.strip())
+        open(".makemenu.sh", "w").write(cmd)
+    else:
         return output
-    open(".makemenu.sh", "w").write(command.replace("$MENUMAKE_OPTIONS", output))
 
 def main(stdscr):
     curses.start_color()
