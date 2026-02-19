@@ -10,9 +10,9 @@ A simple build program that supports menus
 
 
 ### Syntax:
- * The syntax is in JSON and has two fields at the top. "command" for the compilation command and "menu" for the menu layout.
+ * The syntax is in JSON and has two fields at the top. "command" for a path to a build scrpt and "menu" for the menu layout.
  * This supports Submenus, Integers and Booleans.
- * The options get added where there's a "$MENUMAKE_OPTIONS_#" string where "#" is the last argument in the list for a menu entry.
+ * The options get added in the build script where there's a "$MENUMAKE_OPTIONS_#" string where "#" is the last argument in the list for a menu entry.
 
 #### Boolean Syntax:
  * `"Name", [false, "COMPILATION FLAG", 0]`. The compilation flag gets added to the compilation command if it has been set to True.

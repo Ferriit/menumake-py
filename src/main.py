@@ -108,7 +108,7 @@ def main(stdscr):
 
     menudata = json.loads(open("menumake.json").read())
     menu = menudata["menu"]
-    command = menudata["command"]
+    command = open(menudata["command"]).read()
 
     rows, col = stdscr.getmaxyx();
 
