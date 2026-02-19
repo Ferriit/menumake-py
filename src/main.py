@@ -115,10 +115,10 @@ def main(stdscr):
     path = "/"
 
     currmenu = menu
-
-    curses.init_pair(1, 16, curses.COLOR_BLUE)
-    curses.init_pair(2, 16, 255)
-    curses.init_pair(3, 255, 240)
+        
+    curses.init_pair(1, curses.COLOR_WHITE, curses.COLOR_BLACK)
+    curses.init_pair(2, curses.COLOR_WHITE, curses.COLOR_BLACK)
+    curses.init_pair(3, curses.COLOR_BLACK, curses.COLOR_WHITE)
 
     stdscr.bkgd(" ", curses.color_pair(1))
     stdscr.clear()
@@ -219,7 +219,6 @@ if __name__ == "__main__":
         
         if "run" in sys.argv:
             openmenu = True
-
     if openmenu:
         curses.wrapper(main)
 
