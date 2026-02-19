@@ -1,0 +1,1 @@
+echo $MENUMAKE_OPTIONS_0

@@ -1,5 +1,5 @@
 {
-    "command": "echo $MENUMAKE_OPTIONS_0",
+    "command": "menumake_test.sh",
     "menu": {
         "Option 1": [false, "This is option 1.", 0],
         "Option 2": [true, "This is option 2.", 0],

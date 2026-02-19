@@ -2,6 +2,7 @@
 
 import curses
 import os
+from os.path import isfile
 import sys
 import json
 
@@ -34,7 +35,7 @@ def resolvepath(menu, path):
 
     return curr
 
-def saveconfig(menu, command):
+def saveconfig(menu, command, is_makefile):
     max_index = 0
     def find_max_index(m):
         nonlocal max_index
@@ -71,9 +72,15 @@ def saveconfig(menu, command):
 
     final_command = command
     for i, out in enumerate(outputs):
-        final_command = final_command.replace(f"$MENUMAKE_OPTIONS_{i}", out.strip())
+        if not is_makefile:
+            # Assume shell script
+            final_command = f"export MENUMAKE_OPTIONS_{i}='{out.strip()}'\n{final_command}"
 
-    with open(".makemenu.sh", "w") as f:
+        else:
+            # Assume makefile
+            final_command = f"MENUMAKE_OPTIONS_{i} := '{out.strip()}'\n{final_command}"
+
+    with open(".makemenu.make" if is_makefile else ".makemenu.sh", "w") as f:
         f.write(final_command)
 
 def main(stdscr):
@@ -110,6 +117,8 @@ def main(stdscr):
     menu = menudata["menu"]
     command = open(menudata["command"]).read()
 
+    is_makefile = menudata["command"] == "Makefile"
+
     rows, col = stdscr.getmaxyx();
 
     path = "/"
@@ -138,28 +147,43 @@ def main(stdscr):
         msg = "Press ESC to save and exit"
         stdscr.addstr(0, 0, msg, curses.color_pair(2))
 
+        # Determine visible area
+        top = 5
+        bottom = rows - 6
+        visible_lines = bottom - top + 1
+
+        global scroll_offset
+        num_options = len(currmenu)
+        # Adjust scroll_offset if selectedthing is outside the current view
+        if selectedthing < scroll_offset:
+            scroll_offset = selectedthing
+        elif selectedthing >= scroll_offset + visible_lines:
+            scroll_offset = selectedthing - visible_lines + 1
+
         cursX, cursY = 0, 0
 
         for i, (option, value) in enumerate(currmenu.items()):
+            line_num = i - scroll_offset
+            if line_num < 0 or line_num >= visible_lines:
+                continue  # Skip lines outside visible window
+
             if type(value[0]) == bool:
                 marker = '[*]' if value[0] else '[ ]'
-
             elif type(value[0]) == int:
                 marker = f"[{value[0]}]"
             elif type(value[0]) == dict:
-                # Assume submenu. First element is options dict
-                marker = f"->"
-
+                marker = "->"
             else:
                 marker = str(value[0])
-            
-            stdscr.addstr(5, 10, path, curses.color_pair(2))
+
+            # Display the path (if needed)
+            stdscr.addstr(top + line_num, 10, path, curses.color_pair(2))
 
             if i == selectedthing:
-                cursX, cursY = 10, 5 + i + 1
-                stdscr.addstr(5 + i + 1, 10, f"*{option} {marker}", curses.color_pair(3))
+                cursX, cursY = 10, top + line_num
+                stdscr.addstr(top + line_num, 10, f"*{option} {marker}", curses.color_pair(3))
             else:
-                stdscr.addstr(5 + i + 1, 10, f"-{option} {marker}", curses.color_pair(2))
+                stdscr.addstr(top + line_num, 10, f"-{option} {marker}", curses.color_pair(2))
 
         stdscr.move(cursY, cursX)
 
@@ -190,7 +214,7 @@ def main(stdscr):
         # Handle going back from submenus
         elif ch == curses.KEY_BACKSPACE or ch == 127 or ch == 8:
             if path == "/":
-                saveconfig(menu, command)
+                saveconfig(menu, command, is_makefile)
                 break
             path = "/".join(path.split("/")[:-2]) + "/"
             currmenu = resolvepath(menu, path)
@@ -205,7 +229,7 @@ def main(stdscr):
 
         stdscr.refresh()
         if ch == 27:
-            saveconfig(menu, command)
+            saveconfig(menu, command, is_makefile)
             break
 
 
@@ -219,8 +243,18 @@ if __name__ == "__main__":
         
         if "run" in sys.argv:
             openmenu = True
+    
     if openmenu:
         curses.wrapper(main)
 
     if build:
-        os.system("sh .makemenu.sh")
+        if os.path.isfile(".makemenu.sh"):
+            os.system("sh .makemenu.sh")
+            os.remove(".makemenu.sh")
+
+        elif os.path.isfile(".makemenu.make"):
+            os.system("make -f .makemenu.make")
+            os.remove(".makemenu.make")
+
+        else:
+            print("No menumake build file exists for either shell or make. Run menumake to generate it")
