@@ -1,0 +1,36 @@
+command: "menumake_test.sh"
+
+[Option 1]
+type = "toggle"
+value = "false"
+# Replace MENUMAKE_OPTIONS_0
+index = "0"
+flags = "This is option 1."
+
+[Option 2]
+type = "toggle"
+value = "true"
+index = "0"
+flags = "This is option 2."
+
+Submenu test:
+	[Suboption 1]
+	type = "toggle"
+	value = "false"
+	index = "0"
+	flags = "This is suboption 1."
+
+	[Suboption 2]
+	type = "toggle"
+	value = "true"
+	index = "0"
+	flags = "This is suboption 2."
+
+[Option 3]
+type = "int"
+value = "0"
+# Min must come before max
+min = "0"
+max = "10"
+index = "0"
+flags = "Option 3 is $."

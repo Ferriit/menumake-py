@@ -1,24 +1,63 @@
 # menumake-py
 A simple build program that supports menus
 
-## !DISCLAIMER!
-### Do NOT use this for actual projects that require value checking for integers or projects that require multi-line compilation as this DOES NOT support such compilation and is incredibly unstable without value checking!
-
  * To run the configuration, run `makemenu`.
  * To run the generated shell script, run `makemenu build`. This skips the menu.
- * Tp run the configuration and also run the generated shell script, run `makemenu run build`.
+ * To run the configuration and also run the generated shell script, run `makemenu run build`.
 
 
 ### Syntax:
- * The syntax is in JSON and has two fields at the top. "command" for a path to a build scrpt and "menu" for the menu layout.
- * This supports Submenus, Integers and Booleans.
- * The options get added in the build script where there's a "$MENUMAKE_OPTIONS_#" string where "#" is the last argument in the list for a menu entry.
+ * The syntax is in a custom format and has one field at the top, "command" for a path to a build script or a Makefile
+ * This supports Submenus, Integers and Booleans thus far.
+ * The options get added in the build script or Makefile as variables named "$MENUMAKE\_OPTIONS\_#" string where "#" is the last argument in the list for a menu entry.
 
-#### Boolean Syntax:
- * `"Name", [false, "COMPILATION FLAG", 0]`. The compilation flag gets added to the compilation command if it has been set to True.
+ - Type is the type of the entry (int, toggle)
+ - Value is the default value of the entry (true, false or a number)
+ - Index is the variable index the entry will replace (0 for MENUMAKE\_OPTIONS\_0, 1 for MENUMAKE\_OPTIONS\_1 etc. etc.)
+ - Flags is a string with what will be added if the entry is true. If the entry is an int, it will replace "$" in the flag string with the value
+ - (min / max) are optional for ints. Min is the lowest number and Max is the highest number. If they aren't provided, the int becomes unbound. Min always has to come before Max.
+ - All definition parts of an entry are lowercase except for the label.
+ - To define an entry, wrap a name in square brackets ("[" and "]"). Then add the necessary fields.
+ - To define a submenu, write a name for it, then add a colon (":") at the end of the line. To put things in the submenu, indent them more than the submenu is indented.
 
-#### Integer Syntax:
- * `"Name", [0, "COMPILATIONFLAG=$", 0]`. The $ gets substituted with the value set in the menu.
+#### Example:
+```
+# Command supports both shell scripts and Makefiles
+command: "menumake_test.sh"
 
-#### Submenu Syntax:
- * `"Name": [{}]`. This shows up as "Name" in the menu and allows the user to change everything inside the submenu. The syntax inside the curly braces for a submenu is the same as that of the main menu
+[Option 1]
+type = "toggle"
+value = "false"
+# Replace MENUMAKE_OPTIONS_0
+index = "0"
+flags = "This is option 1."
+
+[Option 2]
+type = "toggle"
+value = "true"
+index = "0"
+flags = "This is option 2."
+
+Submenu:
+	[Suboption 1]
+	type = "toggle"
+	value = "false"
+	index = "0"
+	flags = "This is suboption 1."
+
+	[Suboption 2]
+	type = "toggle"
+	value = "true"
+	index = "0"
+	flags = "This is suboption 2."
+
+[Option 3]
+type = "int"
+value = "0"
+# Min must come before max
+min = "0"
+max = "10"
+index = "0"
+flags = "Option 3 is $."
+```
+

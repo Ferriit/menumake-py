@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
-
 import curses
 import os
-from os.path import isfile
 import sys
 import json
+import re
 
 def resolvepath(menu, path):
     if not path or path == "/":
@@ -83,6 +82,86 @@ def saveconfig(menu, command, is_makefile):
     with open(".makemenu.make" if is_makefile else ".makemenu.sh", "w") as f:
         f.write(final_command)
 
+
+def decode_menumakefile(filename):
+    result = {"command": "", "menu": {}}
+    stack = [(0, result["menu"])]  # list of tuples: (indent_level, dict)
+    current_option = None
+
+    curr_type = ""
+
+    with open(filename, "r") as f:
+        lines = [line.rstrip('\n') for line in f]
+
+    if lines and lines[0].startswith("command:"):
+        result["command"] = lines[0].split(":", 1)[1].strip().strip('"').strip("'")
+        lines = lines[1:]
+
+    for line in lines:
+        if not line.strip() or line.strip().startswith("#"):
+            continue
+
+        indent = len(line) - len(line.lstrip())
+        stripped = line.strip()
+
+        while stack and indent <= stack[-1][0]:
+            stack.pop()
+        parent = stack[-1][1] if stack else result["menu"]
+
+        if stripped.endswith(":") and not stripped.startswith("["):
+            parent[stripped[:-1]] = [{}]  # submenu as list with dict
+            stack.append((indent, parent[stripped[:-1]][0]))
+            continue
+
+        match = re.match(r"\[(.+)\]", stripped)
+        if match:
+            current_option = match.group(1).strip()
+            parent[current_option] = [None, "", 0]
+            continue
+
+        if "=" in stripped and current_option is not None:
+            key, val = stripped.split("=", 1)
+            key = key.strip()
+            val = val.strip().strip('"').strip("'")
+
+            if key == "type":
+                curr_type = val.lower()
+
+            elif key == "value":
+                if val.lower() == "true":
+                    parent[current_option][0] = True
+                elif val.lower() == "false":
+                    parent[current_option][0] = False
+                else:
+                    try:
+                        parent[current_option][0] = int(val)
+                    except:
+                        parent[current_option][0] = val
+            elif key == "flags":
+                parent[current_option][1] = val
+            elif key == "index":
+                try:
+                    parent[current_option][2] = int(val)
+                except:
+                    parent[current_option][2] = 0
+
+            elif key == "min" and curr_type == "int":
+                try:
+                    parent[current_option][3] = int(val)
+                except IndexError:
+                    parent[current_option].append(int(val))
+
+            elif key == "max" and curr_type == "int":
+                try:
+                    parent[current_option][4] = int(val)
+                except IndexError:
+                    if len(parent[current_option]) == 3:
+                        parent[current_option].append()
+                    parent[current_option].append(int(val))
+
+    return result
+
+
 def main(stdscr):
     curses.start_color()
     curses.use_default_colors()
@@ -113,7 +192,7 @@ def main(stdscr):
     #     } // $ = placeholder for number value
     # }
 
-    menudata = json.loads(open("menumake.json").read())
+    menudata = decode_menumakefile("Menumakefile")
     menu = menudata["menu"]
     command = open(menudata["command"]).read()
 
@@ -147,20 +226,21 @@ def main(stdscr):
         msg = "Press ESC to save and exit"
         stdscr.addstr(0, 0, msg, curses.color_pair(2))
 
-        # Determine visible area
         top = 5
         bottom = rows - 6
         visible_lines = bottom - top + 1
 
         global scroll_offset
+        scroll_offset = 0
         num_options = len(currmenu)
-        # Adjust scroll_offset if selectedthing is outside the current view
         if selectedthing < scroll_offset:
             scroll_offset = selectedthing
         elif selectedthing >= scroll_offset + visible_lines:
             scroll_offset = selectedthing - visible_lines + 1
 
         cursX, cursY = 0, 0
+
+        stdscr.addstr(top - 1, 10, path, curses.color_pair(2))
 
         for i, (option, value) in enumerate(currmenu.items()):
             line_num = i - scroll_offset
@@ -175,9 +255,6 @@ def main(stdscr):
                 marker = "->"
             else:
                 marker = str(value[0])
-
-            # Display the path (if needed)
-            stdscr.addstr(top + line_num, 10, path, curses.color_pair(2))
 
             if i == selectedthing:
                 cursX, cursY = 10, top + line_num
@@ -223,9 +300,28 @@ def main(stdscr):
         # Handle increments/decrements
         elif (ch == curses.KEY_RIGHT or ch == ord("l") or ch == ord("d")) and type(currmenu[list(currmenu)[selectedthing]][0]) == int:
             currmenu[list(currmenu)[selectedthing]][0] += 1
-        
-        elif (ch == curses.KEY_LEFT or ch == ord("h") or ch == ord("a")) and type(currmenu[list(currmenu)[selectedthing]][0]) == int:
-            currmenu[list(currmenu)[selectedthing]][0] -= 1
+
+            # Clamp value 
+            if len(currmenu[list(currmenu)[selectedthing]]) == 3:
+                currmenu[list(currmenu)[selectedthing]][0] = min(currmenu[list(currmenu)[selectedthing]][0], currmenu[list(currmenu)[selectedthing]][3])
+            if len(currmenu[list(currmenu)[selectedthing]]) == 4:
+                currmenu[list(currmenu)[selectedthing]][0] = max(currmenu[list(currmenu)[selectedthing]][0], currmenu[list(currmenu)[selectedthing]][4])
+
+        val_list = currmenu[list(currmenu)[selectedthing]]
+
+        if type(val_list[0]) == int:
+            # increment
+            if ch in (curses.KEY_RIGHT, ord("l"), ord("d")):
+                val_list[0] += 1
+            # decrement
+            elif ch in (curses.KEY_LEFT, ord("h"), ord("a")):
+                val_list[0] -= 1
+
+            # Apply clamping if min/max exist
+            if len(val_list) >= 4:  # min exists
+                val_list[0] = max(val_list[0], val_list[3])
+            if len(val_list) >= 5:  # max exists
+                val_list[0] = min(val_list[0], val_list[4])
 
         stdscr.refresh()
         if ch == 27:
